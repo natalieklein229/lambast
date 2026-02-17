@@ -30,3 +30,6 @@ example:
 ### Examples
 
 See the `lambast/examples` directory for examples on how to use lambast.
+
+#### Open-source Code Assertion
+This code is released under O4950.
