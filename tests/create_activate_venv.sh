@@ -36,6 +36,7 @@ fi
 
 # Install lambast
 if [[ $install ]]; then
+    python3 -m pip install --upgrade pip
     python3 -m pip install mypy
     python3 -m pip install flake8
     python3 -m pip install autopep8

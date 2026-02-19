@@ -5,12 +5,12 @@ Time series generation classes.
 
 import copy
 import warnings
-from typing import Self
 
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray
 from scipy.stats import truncnorm
+from typing_extensions import Self
 
 from lambast.utils import assert_valid_covariance
 

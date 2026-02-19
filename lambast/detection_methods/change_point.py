@@ -32,14 +32,14 @@ class ChangePoint(object):
         "Window": ruptures.Window
     }
 
-    optional_arguments: ClassVar[list[str]] = [
+    optional_args: ClassVar[list[str]] = [
         "model",
         "custom_cost",
         "min_size",
         "jump",
     ]
 
-    possible_arguments: ClassVar[dict[str, list[str]]] = {
+    choose_arg: ClassVar[dict[str, list[str]]] = {
         "Binseg": ["n_bkps", "pen", "epsilon"],
         "BottomUp": ["n_bkps", "pen", "epsilon"],
         "Dynp": ["n_bkps"],
@@ -66,8 +66,7 @@ class ChangePoint(object):
 
         s = "Estimators: "
         for key in ChangePoint.estimators:
-            s += f"{key}: use with one of {
-                ChangePoint.possible_arguments[key]}\n"
+            s += f"{key}: use with one of {ChangePoint.choose_arg[key]}\n"
 
         s += "--- Description of parameters ---\n"
         s += "n_bkps (int): number of breakpoints to find before stopping.\n"

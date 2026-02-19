@@ -1,12 +1,13 @@
-import pathlib
 import unittest
+from pathlib import Path
 
 import numpy as np
 import ruptures as rpt
+from numpy.typing import NDArray
+
 from lambast.detection_methods import ChangePoint
 from lambast.generate_data import (HSMM, ClaytonCopula, FrankCopula, JoeCopula,
                                    LinearSSM, NormalCopula, Voigt)
-from numpy.typing import NDArray
 
 
 class IntegratedTests(unittest.TestCase):
@@ -17,14 +18,21 @@ class IntegratedTests(unittest.TestCase):
     def __init__(self, *args):
         super().__init__(*args)
 
-    def check_with_blessed(self, file: str, array:  NDArray,
+    def check_with_blessed(self, file: str | Path, array:  NDArray,
                            n_digits: int = 14, save: bool = False,
                            directory: str = "blessed_files") -> None:
         '''
         Generic function to test array against blessed file
         '''
 
-        pathFile = pathlib.Path(directory) / file
+        pathDir = Path(directory)
+
+        # If not inside of the tests directory already, add it to the path
+        dirname = Path.cwd().name
+        if dirname != "tests":
+            pathDir = "tests" / pathDir
+
+        pathFile = pathDir / file
 
         if save:
             np.save(pathFile, array)
@@ -67,7 +75,8 @@ class LinearSSMTests(IntegratedTests):
         '''
 
         # Check against blessed file
-        self.check_with_blessed("linear_SSM/base", self.ssm.ts_samples)
+        ssm_dir = Path("linear_SSM")
+        self.check_with_blessed(ssm_dir / "base", self.ssm.ts_samples)
 
     def test_change_state_matrix(self) -> None:
         '''
@@ -85,7 +94,8 @@ class LinearSSMTests(IntegratedTests):
         ssm.sample(self.n, self.t)
 
         # Check against blessed file
-        self.check_with_blessed("linear_SSM/state_matrix", ssm.ts_samples)
+        ssm_dir = Path("linear_SSM")
+        self.check_with_blessed(ssm_dir / "state_matrix", ssm.ts_samples)
 
     def test_change_observation_noise(self) -> None:
         '''
@@ -101,7 +111,8 @@ class LinearSSMTests(IntegratedTests):
         ssm.sample(self.n, self.t)
 
         # Check against blessed file
-        self.check_with_blessed("linear_SSM/observation_noise", ssm.ts_samples)
+        ssm_dir = Path("linear_SSM")
+        self.check_with_blessed(ssm_dir / "observation_noise", ssm.ts_samples)
 
     def test_change_observation_matrix(self) -> None:
         '''
@@ -118,8 +129,8 @@ class LinearSSMTests(IntegratedTests):
         ssm.sample(self.n, self.t)
 
         # Check against blessed file
-        self.check_with_blessed(
-            "linear_SSM/observation_matrix", ssm.ts_samples)
+        ssm_dir = Path("linear_SSM")
+        self.check_with_blessed(ssm_dir / "observation_matrix", ssm.ts_samples)
 
 
 class CopulaTests(IntegratedTests):
@@ -156,7 +167,7 @@ class CopulaTests(IntegratedTests):
         # Generate the samples with seed for test reproducibility
         rng = np.random.default_rng(seed=42)
 
-        file = f"copulas/{name.lower()}_samples"
+        file = Path("copulas") / f"{name.lower()}_samples"
         copula = self.copulas[name.capitalize()]
         self.check_with_blessed(file, copula.sample(self.n, self.t, rng=rng))
 
@@ -165,7 +176,7 @@ class CopulaTests(IntegratedTests):
         Test the named copula density generation
         '''
 
-        file = f"copulas/{name.lower()}_density"
+        file = Path("copulas") / f"{name.lower()}_density"
         copula = self.copulas[name.capitalize()]
         self.check_with_blessed(file, copula.density(n_samples=self.n_samples))
 
@@ -273,8 +284,9 @@ class HSMMTests(IntegratedTests):
         samples, states = self.hsmm.sample(self.n, self.t)
 
         # Check against blessed file
-        self.check_with_blessed("HSMM/HSMM_sample", samples)
-        self.check_with_blessed("HSMM/HSMM_states", states)
+        hsmm_dir = Path("HSMM")
+        self.check_with_blessed(hsmm_dir / "HSMM_sample", samples)
+        self.check_with_blessed(hsmm_dir / "HSMM_states", states)
 
 
 class VoigtTests(IntegratedTests):
@@ -310,12 +322,13 @@ class VoigtTests(IntegratedTests):
                               sigma_range=(1e-3, 1e-2), amp_range=(1, 2),
                               noise_var=1, rng=self.rng).synthetic_data_gen()
 
+        voigt_dir = Path.joinpath(Path("Voigt"), "fr_in")
         for key in self.in_keys:
-            self.check_with_blessed(f"Voigt/fr_in/Voigt_in_{key}", df_in[key])
+            self.check_with_blessed(voigt_dir / f"Voigt_in_{key}", df_in[key])
 
         for key in self.out_keys:
             self.check_with_blessed(
-                f"Voigt/fr_in/Voigt_out_{key}", df_out[key])
+                voigt_dir / f"Voigt_out_{key}", df_out[key])
 
     def test_Voigt_sample_out(self) -> None:
         '''
@@ -329,12 +342,13 @@ class VoigtTests(IntegratedTests):
                               sigma_range=(1e-3, 1e-2), amp_range=(1, 2),
                               noise_var=1, rng=self.rng).synthetic_data_gen()
 
+        voigt_dir = Path.joinpath(Path("Voigt"), "fr_out")
         for key in self.in_keys:
-            self.check_with_blessed(f"Voigt/fr_out/Voigt_in_{key}", df_in[key])
+            self.check_with_blessed(voigt_dir / f"Voigt_in_{key}", df_in[key])
 
         for key in self.out_keys:
             self.check_with_blessed(
-                f"Voigt/fr_out/Voigt_out_{key}", df_out[key])
+                voigt_dir / f"Voigt_out_{key}", df_out[key])
 
 
 class ChangePointTest(IntegratedTests):
