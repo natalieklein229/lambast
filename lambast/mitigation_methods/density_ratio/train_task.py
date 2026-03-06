@@ -1,9 +1,10 @@
 """
+lambast/mitigation_methods/density_ratio/train_task.py
+
 Training utilities for binary classification task.
 
 """
 
-# lambast/mitigation_methods/density_ratio/train_task.py
 
 from __future__ import annotations
 
@@ -15,17 +16,9 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
+from .util import _to_float_tensor
 
 TensorLike = Union[np.ndarray, torch.Tensor]
-
-
-def _to_float_tensor(x: TensorLike) -> torch.Tensor:
-    if isinstance(x, torch.Tensor):
-        t = x
-    else:
-        t = torch.from_numpy(np.asarray(x))
-    return t.float().contiguous()
-
 
 @torch.no_grad()
 def eval_binary_accuracy(
