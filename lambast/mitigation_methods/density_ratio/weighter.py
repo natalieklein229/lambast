@@ -128,7 +128,9 @@ class DensityRatioWeighter:
 
                 optimizer.zero_grad()
                 logits = self.model(batch.x)
-                loss = criterion(logits, batch.y)
+                eps_ls = 0.05  # try 0.05, 0.1
+                y = batch.y * (1.0 - 2 * eps_ls) + eps_ls
+                loss = criterion(logits, y)
                 loss.backward()
                 optimizer.step()
                 
@@ -162,7 +164,7 @@ class DensityRatioWeighter:
 
         return self
 
-    def compute_weights(self, X_source: TensorLike) -> torch.Tensor:
+    def compute_weights(self, X_source: TensorLike, alpha=1) -> torch.Tensor:
         """
         Compute density-ratio weights for source samples.
         """
@@ -179,7 +181,7 @@ class DensityRatioWeighter:
         d = torch.clamp(d, self.eps, 1.0 - self.eps)
 
         # odds = p(target|x) / p(source|x)
-        w = d / (1.0 - d)
+        w = torch.pow(d / (1.0 - d),alpha)
 
         # clip
         w = torch.clamp(w, self.w_clip[0], self.w_clip[1])
