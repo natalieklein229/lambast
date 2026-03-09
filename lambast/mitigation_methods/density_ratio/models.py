@@ -10,6 +10,7 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 
+
 class FeatureNet1D(nn.Module):
     """
     Feature extractor for 1D time series.
@@ -18,7 +19,8 @@ class FeatureNet1D(nn.Module):
     Output: (B, D)
     """
 
-    def __init__(self, in_channels: int = 2, hidden: int = 32, out_dim: int = 64):
+    def __init__(self, in_channels: int = 2, hidden: int = 32,
+                 out_dim: int = 64):
         super().__init__()
 
         self.conv = nn.Sequential(
@@ -37,9 +39,9 @@ class FeatureNet1D(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        z = self.conv(x)          # (B, hidden, T)
+        z = self.conv(x)              # (B, hidden, T)
         z = self.pool(z).squeeze(-1)  # (B, hidden)
-        z = self.proj(z)          # (B, out_dim)
+        z = self.proj(z)              # (B, out_dim)
         return z
 
 
@@ -67,15 +69,19 @@ class DomainClassifier(nn.Module):
     Output: (B,) logits
     """
 
-    def __init__(self, in_channels: int = 2, hidden: int = 32, feat_dim: int = 64):
+    def __init__(self, in_channels: int = 2, hidden: int = 32,
+                 feat_dim: int = 64):
         super().__init__()
-        self.feature = FeatureNet1D(in_channels=in_channels, hidden=hidden, out_dim=feat_dim)
+        self.feature = FeatureNet1D(
+            in_channels=in_channels,
+            hidden=hidden,
+            out_dim=feat_dim)
         self.head = DomainHead(in_dim=feat_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         z = self.feature(x)
         return self.head(z)
-    
+
 
 class BinaryCNN(nn.Module):
     """
@@ -98,6 +104,5 @@ class BinaryCNN(nn.Module):
         self.head = nn.Linear(hidden, 1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        z = self.net(x).squeeze(-1)   # (B, hidden)
+        z = self.net(x).squeeze(-1)      # (B, hidden)
         return self.head(z).squeeze(-1)  # (B,)
-    
