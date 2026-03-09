@@ -19,6 +19,7 @@ from .util import _to_float_tensor
 
 TensorLike = Union[np.ndarray, torch.Tensor]
 
+
 class DomainDataset(Dataset):
     """
     Dataset for training a domain classifier: source vs target.
@@ -45,7 +46,8 @@ class DomainDataset(Dataset):
         if self.Xs.ndim != 3 or self.Xt.ndim != 3:
             raise ValueError(
                 "X_source and X_target must be 3D tensors of shape (N, C, T). "
-                f"Got X_source.ndim={self.Xs.ndim}, X_target.ndim={self.Xt.ndim}."
+                f"Got X_source.ndim={
+                    self.Xs.ndim}, X_target.ndim={self.Xt.ndim}."
             )
         if self.Xs.shape[1] != self.Xt.shape[1]:
             raise ValueError(
@@ -126,14 +128,18 @@ class WeightedTaskDataset(Dataset):
 
         n = int(self.X.shape[0])
         if self.y.shape[0] != n:
-            raise ValueError(f"y must have length N={n}; got {self.y.shape[0]}.")
+            raise ValueError(
+                f"y must have length N={n}; got {
+                    self.y.shape[0]}.")
         if self.w.shape[0] != n:
-            raise ValueError(f"w must have length N={n}; got {self.w.shape[0]}.")
+            raise ValueError(
+                f"w must have length N={n}; got {
+                    self.w.shape[0]}.")
 
     def __len__(self) -> int:
         return int(self.X.shape[0])
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, ...]:
         x = self.X[idx]
         y = self.y[idx]
         w = self.w[idx]
@@ -166,7 +172,8 @@ def make_balanced_domain_batch(
     batch_size must be even; half from source, half from target.
     """
     if batch_size % 2 != 0:
-        raise ValueError("batch_size must be even for balanced domain batching.")
+        raise ValueError(
+            "batch_size must be even for balanced domain batching.")
 
     half = batch_size // 2
     if source_indices.numel() != half or target_indices.numel() != half:
@@ -175,14 +182,14 @@ def make_balanced_domain_batch(
             f"got {source_indices.numel()} and {target_indices.numel()}."
         )
 
-    xs = torch.stack([domain_ds.get_source(int(i)) for i in source_indices], dim=0)
-    xt = torch.stack([domain_ds.get_target(int(i)) for i in target_indices], dim=0)
+    xs = torch.stack([domain_ds.get_source(int(i))
+                     for i in source_indices], dim=0)
+    xt = torch.stack([domain_ds.get_target(int(i))
+                     for i in target_indices], dim=0)
 
     x = torch.cat([xs, xt], dim=0)
-    y = torch.cat(
-        [torch.zeros(half, dtype=torch.float32), torch.ones(half, dtype=torch.float32)],
-        dim=0,
-    )
+    y = torch.cat([torch.zeros(half, dtype=torch.float32),
+                   torch.ones(half, dtype=torch.float32)], dim=0, )
 
     # Shuffle within the batch so the model doesn't see ordered domains.
     perm = torch.randperm(batch_size)

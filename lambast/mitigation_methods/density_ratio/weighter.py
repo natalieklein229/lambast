@@ -13,13 +13,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
 
 from .datasets import DomainDataset, make_balanced_domain_batch
 from .models import DomainClassifier
 from .util import _to_float_tensor
 
 TensorLike = Union[np.ndarray, torch.Tensor]
+
 
 class DensityRatioWeighter:
     """
@@ -62,14 +62,19 @@ class DensityRatioWeighter:
 
         self.model = model
         self._fitted = False
-        self.diagnostics_ = {}
-        self.history_ = {}
+        self.diagnostics_: dict[str, float] = {}
+        self.history_: dict[str, list[float]] = {}
 
     # ----------------------------
     # Public API
     # ----------------------------
 
-    def fit(self, X_source: TensorLike, X_target: TensorLike, X_source_val=None, X_target_val=None) -> "DensityRatioWeighter":
+    def fit(
+            self,
+            X_source: TensorLike,
+            X_target: TensorLike,
+            X_source_val=None,
+            X_target_val=None) -> "DensityRatioWeighter":
         """
         Train domain classifier on source vs target.
         Parameters
@@ -105,10 +110,15 @@ class DensityRatioWeighter:
 
         half_batch = self.batch_size // 2
         if self.batch_size % 2 != 0:
-            raise ValueError("batch_size must be even for balanced domain training.")
+            raise ValueError(
+                "batch_size must be even for balanced domain training.")
 
         self.model.train()
-        self.history_ = {"train_loss": [], "train_acc": [], "val_loss": [], "val_acc": []}
+        self.history_ = {
+            "train_loss": [],
+            "train_acc": [],
+            "val_loss": [],
+            "val_acc": []}
         for epoch in range(self.epochs):
             # number of balanced steps per epoch
             steps = max(n_source, n_target) // half_batch
@@ -133,7 +143,7 @@ class DensityRatioWeighter:
                 loss = criterion(logits, y)
                 loss.backward()
                 optimizer.step()
-                
+
                 with torch.no_grad():
                     preds = (torch.sigmoid(logits) > 0.5).float()
                     acc = (preds == batch.y).float().mean()
@@ -160,7 +170,8 @@ class DensityRatioWeighter:
         final_loss, final_acc = self._eval_domain_full(ref_ds)
         self.diagnostics_["domain_loss"] = float(final_loss)
         self.diagnostics_["domain_accuracy"] = float(final_acc)
-        self.diagnostics_["used_validation_for_diagnostics"] = 1.0 if val_ds is not None else 0.0
+        self.diagnostics_["used_validation_for_diagnostics"] = float(
+            val_ds is not None)
 
         return self
 
@@ -173,6 +184,7 @@ class DensityRatioWeighter:
 
         Xs = _to_float_tensor(X_source).to(self.device)
 
+        assert self.model is not None
         self.model.eval()
         with torch.no_grad():
             logits = self.model(Xs)
@@ -181,7 +193,7 @@ class DensityRatioWeighter:
         d = torch.clamp(d, self.eps, 1.0 - self.eps)
 
         # odds = p(target|x) / p(source|x)
-        w = torch.pow(d / (1.0 - d),alpha)
+        w = torch.pow(d / (1.0 - d), alpha)
 
         # clip
         w = torch.clamp(w, self.w_clip[0], self.w_clip[1])
@@ -201,6 +213,7 @@ class DensityRatioWeighter:
         Compute simple domain accuracy as a sanity check.
         """
 
+        assert self.model is not None
         self.model.eval()
         with torch.no_grad():
             Xs = domain_ds.Xs.to(self.device)
@@ -238,9 +251,10 @@ class DensityRatioWeighter:
 
         model.train()
         return loss, acc
-    
+
     @torch.no_grad()
-    def _eval_domain_full(self, domain_ds: DomainDataset) -> Tuple[float, float]:
+    def _eval_domain_full(
+            self, domain_ds: DomainDataset) -> Tuple[float, float]:
         """
         Full evaluation on all source and all target examples.
 
@@ -249,6 +263,7 @@ class DensityRatioWeighter:
         loss: float (average of source-loss and target-loss)
         acc:  float (average of source-acc and target-acc)
         """
+        assert self.model is not None
         self.model.eval()
         bce = nn.BCEWithLogitsLoss(reduction="mean")
 

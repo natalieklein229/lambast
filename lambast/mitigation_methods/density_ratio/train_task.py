@@ -20,6 +20,7 @@ from .util import _to_float_tensor
 
 TensorLike = Union[np.ndarray, torch.Tensor]
 
+
 @torch.no_grad()
 def eval_binary_accuracy(
     model: nn.Module,
@@ -61,15 +62,15 @@ def train_binary_classifier(
     X: TensorLike,
     y: TensorLike,
     *,
-    X_val = None,
-    y_val = None,
+    X_val=None,
+    y_val=None,
     sample_weight: Optional[TensorLike] = None,
     device: Optional[torch.device] = None,
     epochs: int = 10,
     batch_size: int = 256,
     lr: float = 1e-3,
     weight_decay: float = 1e-4,
-) -> nn.Module:
+) -> Tuple[nn.Module, dict[str, list[float]]]:
     """
     Train a binary classifier on (X, y), optionally with per-example weights.
 
@@ -77,7 +78,8 @@ def train_binary_classifier(
     y: (N,) in {0,1}
     sample_weight: (N,) positive weights (optional)
     """
-    device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = device or torch.device(
+        "cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     model.train()
 
@@ -138,7 +140,7 @@ def train_binary_classifier(
 
             loss.backward()
             opt.step()
-            
+
             loss_sum += float(per_ex_loss.sum().item())
             preds = (torch.sigmoid(logits) > 0.5).float()
             correct += float((preds == yb).float().sum().item())
@@ -156,6 +158,7 @@ def train_binary_classifier(
         history["val_acc"].append(val_acc)
 
     return model, history
+
 
 @torch.no_grad()
 def _eval_binary_epoch(
